@@ -1,13 +1,14 @@
 # Compiler and flags
 CC = gcc
-CFLAGS = -g -O0 -Wall -Werror -Wfatal-errors
+CFLAGS = -g -O0 -Wall -Werror -Wfatal-errors -Iinclude
 
 # Linker flags (for math library)
 LDFLAGS = -lm
 
 # Source and object files
-SRC = main.c board.c move_validation.c victory.c square2bitboard.c mcts.c directions_masks.c
-OBJ = $(SRC:.c=.o)
+SRC_DIR = src
+SRC = $(wildcard $(SRC_DIR)/*.c)
+OBJ = $(patsubst $(SRC_DIR)/%.c,%.o,$(SRC))
 
 # Executable name
 TARGET = bobail
@@ -19,8 +20,8 @@ all: $(TARGET)
 $(TARGET): $(OBJ)
 	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 
-# Compilation
-%.o: %.c
+# Compilation: place .o files in root, compile from src/
+%.o: $(SRC_DIR)/%.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
 # Clean rule
