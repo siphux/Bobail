@@ -12,6 +12,7 @@ typedef struct {
     Bitboard player2;
 } Board;
 
+/*
 // Donne la position (0...24) du seul bit à 1 dans bobail
 int bitboard_log2(Bitboard b) {
     int pos = 0;
@@ -32,7 +33,7 @@ Hash board_to_uint64(const Board* board, int player, int turn) {
     return hash;
 }
 
-
+*/
 
 
 void init_board(Board* board);
