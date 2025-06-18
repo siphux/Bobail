@@ -23,11 +23,11 @@ void print_board(Board board) {
         for (int col = 0; col < 5; col++) {
             Bitboard mask = 0b1U << (5*row+col);
             if (board.bobail & mask) {
-                printf(YELLOW "● " RESET);
+                printf(YELLOW "o " RESET);
             } else if (board.player1 & mask) {
-                printf(RED "● " RESET);
+                printf(RED "o " RESET);
             } else if (board.player2 & mask) {
-                printf(GREEN "● " RESET);
+                printf(GREEN "o " RESET);
             } else {
                 printf(". ");
             }
