@@ -10,6 +10,8 @@
 #include "square2bitboard.h"
 #include "mcts.h"
 
+
+
 // Prompt and read a valid move from the player for the given piece
 void read_valid_move(Board* board, int player, int turn, Bitboard* from_bit, Bitboard* to_bit) {
     char* prompt = (turn == 0) ? "plays the bobail" : "plays his pawn";
@@ -41,6 +43,8 @@ void print_AImove(Move move, int turn){
 
 int main() {
     srand(time(NULL));
+    init_rays_bobail(rays_bobail);
+    init_rays_pawns(rays_pawns);
 
     Board* board = malloc(sizeof(Board));
     init_board(board);
@@ -144,6 +148,7 @@ int main() {
                 if (root->turn == 0){
                     root->player = 1;
                 }
+                root->is_terminal = (victory(*root->board, 0) >= 0);
             }
         }
     }

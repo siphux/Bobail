@@ -20,7 +20,7 @@ void free_tree(Node* node) {
 
 
 bool is_terminal(Board board){
-    if (victory(board, 0)>=0) return true;
+    if ((victory(board, 0)>=0)) return true;
     else return false;
 }
 
@@ -79,60 +79,93 @@ Node* create_node(Board* board, int player, int turn, Move move, Node* parent) {
     return node;
 }
 
-Move* generate_legal_moves(Node* node, int* count) {
+/* générer les mouvements légaux de maière optimale */
+
+void safe_shift_unaire(Bitboard* b, int shift){
+    if (*b == 0) return;
+    for (int i = 0; i < 8; i++){
+        if ((shift == directions_masks[i].shift) && (*b & directions_masks[i].mask)){
+            *b = 0;
+            return;
+        }
+    }
+    int bit = get_lowest_bit_index(*b);
+    int dest = bit + shift;
+    if (dest < 0 || dest > 24) {
+        *b = 0;
+        return;
+    };
+    *b = 1U << dest;
+}
+
+Bitboard rays_bobail[25][8];
+
+void init_rays_bobail(Bitboard rays_bobail[25][8]) {
+    for (int from = 0; from < 25; from++) {
+        for (int dir = 0; dir < 8; dir++) {
+            Bitboard current = 1U << from;
+            safe_shift_unaire(&current, directions_masks[dir].shift);
+            rays_bobail[from][dir] = current;
+        }
+    }
+}
+
+Move* generate_legal_moves_bobail(Node* node, int* count){
     *count = 0;
     Move* moves = malloc(sizeof(Move) * 40);
     Bitboard occupied = node->board->player1 | node->board->player2 | node->board->bobail;
-    if (node->turn == 0){
-        Bitboard bobail = node->board->bobail;
-        for (int i = 0; i < 8; i++) {
-            Bitboard current = bobail;
-            int shift = directions_masks[i].shift;
-            Bitboard mask = directions_masks[i].mask;
+    Bitboard bobail = node->board->bobail;
+    int i = get_lowest_bit_index(bobail);
+    for (int dir = 0; dir < 8; dir++) {
+        Bitboard target = rays_bobail[i][dir];
+            // Si un obstacle ou case hors plateau
+            if (!(target & occupied) && target != 0) {
+                moves[*count].from_bit = bobail;
+                moves[*count].to_bit = target;
+                (*count)++;
+            }
+    }
+    return moves;
+}
 
-            if (!(current & mask)){
-                if (shift > 0) {
-                    current = current << shift;
-                } else {
-                    current = current >> (-shift);
-                }
+Bitboard rays_pawns[25][8][4];
 
-                if (!(current & occupied)){
-                    moves[*count].from_bit = bobail;
-                    moves[*count].to_bit = current;
-                    (*count)++;
-                }
+void init_rays_pawns(Bitboard rays_pawns[25][8][4]) {
+    for (int from = 0; from < 25; from++) {
+        for (int dir = 0; dir < 8; dir++) {
+            Bitboard current = 1U << from;
+            for (int step = 0; step < 4; step ++){
+                safe_shift_unaire(&current, directions_masks[dir].shift);
+                rays_pawns[from][dir][step] = current;
             }
         }
-    } else{
-        Bitboard pawns = (node->player == 0) ? node->board->player1 : node->board->player2;
-        for (int i = 0; i < 25; i++){
-            if (pawns & (0b1U << i)){
-                Bitboard pawn = 0b1U << i;
-                for (int j = 0; j < 8; j++) {
-                    Bitboard current = pawn;
-                    int shift = directions_masks[j].shift;
-                    Bitboard mask = directions_masks[j].mask;
+    }
+}
 
-                    Bitboard last_free = 0b0U; // Pour mémoriser la dernière case libre rencontrée dans la direction
-
-                    while (true) {
-                        if (current & mask) break;
-
-                        if (shift > 0) {
-                            current = current << shift;
-                        } else {
-                            current = current >> (-shift);
+Move* generate_legal_moves_pawns(Node* node, int* count){
+    *count = 0;
+    Move* moves = malloc(sizeof(Move) * 40);
+    Bitboard occupied = node->board->player1 | node->board->player2 | node->board->bobail;
+    Bitboard pawns = (node->player == 0) ? node->board->player1 : node->board->player2;
+    for (int i = 0; i < 25; i++) {
+        if (pawns & (0b1U << i)) {
+            Bitboard pawn = 0b1U << i;
+            for (int dir = 0; dir < 8; dir++) {
+                for (int step = 0; step < 4; step++) {
+                    Bitboard target = rays_pawns[i][dir][step];
+                    // Si un obstacle ou case hors plateau
+                    if ((target & occupied) || target == 0) {
+                        if (step != 0) {
+                            moves[*count].from_bit = pawn;
+                            moves[*count].to_bit = rays_pawns[i][dir][step-1];
+                            (*count)++;
                         }
-
-                        if (current & occupied) break;
-
-                        last_free = current;
+                        break; // Sort de la boucle "step", essaie une autre direction
                     }
-
-                    if (last_free){
+                    // Si on atteint le bout du rayon sans collision
+                    if (step == 3) {
                         moves[*count].from_bit = pawn;
-                        moves[*count].to_bit = last_free;
+                        moves[*count].to_bit = target;
                         (*count)++;
                     }
                 }
@@ -142,6 +175,10 @@ Move* generate_legal_moves(Node* node, int* count) {
     return moves;
 }
 
+Move* generate_legal_moves(Node* node, int* count) {
+    Move* moves = (node->turn == 0) ? generate_legal_moves_bobail(node, count) : generate_legal_moves_pawns(node, count);
+    return moves;
+}
 
 // Expands a node by generating all children from legal moves
 void expand(Node* node) {

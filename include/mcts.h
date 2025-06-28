@@ -3,6 +3,7 @@
 
 #include <stdbool.h>
 #include "board.h"
+#include "uthash.h"
 
 typedef struct Move {
     Bitboard from_bit;
@@ -28,5 +29,21 @@ typedef struct Node {
 Node* create_node(Board* board, int player, int turn, Move move, Node* parent);
 void free_tree(Node* node);
 Move mcts(Node** p_root, double exploration, int iterations);
+
+extern Bitboard rays_bobail[25][8];
+void init_rays_bobail(Bitboard rays_bobail[25][8]);
+
+extern Bitboard rays_pawns[25][8][4];
+void init_rays_pawns(Bitboard rays_pawns[25][8][4]);
+
+/*
+// L’unique instance de la table (accessible partout)
+extern Node *hash_table;
+
+// Fonctions de manipulation
+Node* get_or_create_node(Hash hash);
+Node* find_node(Hash hash);
+void free_hash_table(void);
+*/
 
 #endif
